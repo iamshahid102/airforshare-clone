@@ -1,0 +1,36 @@
+.side-bar-container {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  background-color: white;
+  box-shadow: 2px 2px 15px rgba(214, 211, 211, 0.3),
+    -2px -2px 15px rgba(214, 211, 211, 0.3);
+}
+
+.side-icons {
+  width: 8%;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  background-color: rgb(245, 245, 245);
+}
+
+.side-icons button {
+  width: 100%;
+  font-size: 2.5rem;
+  padding: 15px;
+}
+
+.btn-color {
+  color: #5178d8;
+  background-color: white;
+}
+
+.upload-area {
+  width: 90%;
+  min-height: 400px;
+  padding: 20px 30px;
+}
+
+

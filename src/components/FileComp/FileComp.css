@@ -1,0 +1,17 @@
+.file-container {
+  width: 100%;
+  min-height: 400px;
+}
+
+.file-container h1 {
+  font-size: 3rem;
+  margin-bottom: 30px;
+}
+
+.file-container input {
+  width: 100%;
+  field-sizing: content;
+  min-height: 15rem;
+  border: 1px dotted rgb(148, 148, 148);
+
+}
