@@ -1,24 +1,35 @@
 import { initializeApp } from "firebase/app";
-import {
-  getFirestore,
-  doc,
-  updateDoc,
-  arrayUnion,
-  arrayRemove,
-  getDoc 
-} from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+
+// Validate required environment variables
+const requiredEnvVars = [
+  "VITE_FIREBASE_API_KEY",
+  "VITE_FIREBASE_AUTH_DOMAIN",
+  "VITE_FIREBASE_PROJECT_ID",
+  "VITE_FIREBASE_STORAGE_BUCKET",
+  "VITE_FIREBASE_MESSAGING_SENDER_ID",
+  "VITE_FIREBASE_APP_ID",
+];
+
+for (const envVar of requiredEnvVars) {
+  if (!import.meta.env[envVar]) {
+    console.error(`Missing required environment variable: ${envVar}`);
+  }
+}
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCHaULtXW1az8eupeMdRD-LANADz2mfaOg",
-  authDomain: "shahidsairforshare.firebaseapp.com",
-  projectId: "shahidsairforshare",
-  storageBucket: "shahidsairforshare.firebasestorage.app",
-  messagingSenderId: "534427618359",
-  appId: "1:534427618359:web:4e4ad5548d0bbe951143b2",
-  measurementId: "G-8L39G3FVZM",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-export { db, doc, updateDoc, arrayUnion, arrayRemove,getDoc  };
+export { db, auth };

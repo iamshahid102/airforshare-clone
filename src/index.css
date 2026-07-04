@@ -1,18 +1,81 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Open Sans", sans-serif;
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #638eff;
+  --color-primary-dark: #5178d8;
+  --color-surface: #ffffff;
+  --color-bg: #f4f4f4;
+  --color-border: #e6e6e6;
+  --color-text: #000000;
+  --color-text-muted: #6b7280;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   width: 100%;
-  background-color: #f4f4f4;
+  background-color: var(--color-bg);
+  font-family: "Open Sans", sans-serif;
+  min-height: 100vh;
 }
 
+::selection {
+  background-color: rgba(99, 142, 255, 0.2);
+  color: inherit;
+}
 
-.btn{
-  border: none;
-  background-color: transparent;
-  cursor: pointer;
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c4c4c4;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a0a0a0;
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Prevent layout shift from lazy images */
+img {
+  max-width: 100%;
+  height: auto;
 }
