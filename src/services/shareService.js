@@ -1,7 +1,11 @@
 import {
+  collection,
   doc,
   setDoc,
   getDoc,
+  getDocs,
+  query,
+  where,
   serverTimestamp,
   increment,
   updateDoc,
@@ -19,16 +23,64 @@ export const generateShareId = () => {
 };
 
 /**
- * Creates a new share document in Firestore.
- * Uses the shareId as the document ID for efficient direct lookups.
+ * Finds an existing share document for a given user.
+ * Queries the shares collection by userId — one query per user max.
+ * @param {string} userId - The UID of the sharing user
+ * @returns {Promise<Object|null>} The share data or null if not found
+ */
+export const getShareByUserId = async (userId) => {
+  const q = query(
+    collection(db, "shares"),
+    where("userId", "==", userId)
+  );
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) return null;
+  const shareDoc = snapshot.docs[0];
+  const data = shareDoc.data();
+  return {
+    id: shareDoc.id,
+    ...data,
+    createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+  };
+};
+
+/**
+ * Creates or updates a share document for a user.
+ * If the user already has a share document, it is updated (preserving shareId and createdAt).
+ * Otherwise, a new share document is created.
+ * Each authenticated user has at most one active share document.
  * @param {Object} params
  * @param {string} params.userId - The UID of the sharing user
  * @param {string} params.contentType - "text" | "files" | "mixed"
  * @param {string} [params.text] - Shared text content
  * @param {string[]} [params.imageUrls] - Array of Cloudinary image URLs
- * @returns {Promise<Object>} The created share data with shareId and URL
+ * @returns {Promise<Object>} The share data with shareId and URL
  */
 export const createShare = async ({ userId, contentType, text, imageUrls }) => {
+  // Check for existing share document for this user
+  const existing = await getShareByUserId(userId);
+
+  if (existing) {
+    // Update existing document — preserve shareId and createdAt
+    const updateData = {
+      contentType,
+      text: text || "",
+      imageUrls: imageUrls || [],
+      updatedAt: serverTimestamp(),
+    };
+    await updateDoc(doc(db, "shares", existing.id), updateData);
+
+    return {
+      id: existing.id,
+      shareId: existing.shareId,
+      url: `/share/${existing.shareId}`,
+      isNew: false,
+      ...existing,
+      ...updateData,
+    };
+  }
+
+  // No existing share — create a new one
   const shareId = generateShareId();
 
   const shareData = {
@@ -49,6 +101,7 @@ export const createShare = async ({ userId, contentType, text, imageUrls }) => {
     id: shareId,
     shareId,
     url: `/share/${shareId}`,
+    isNew: true,
     ...shareData,
   };
 };

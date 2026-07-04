@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   doc,
   getDoc,
@@ -21,11 +21,16 @@ import {
 
 const getTextDocRef = (uid) => doc(db, "userText", uid);
 
-const TextPanel = ({ user, onShareText }) => {
+const TextPanel = ({ user, onShareText, onDataLoaded }) => {
   const [inputValue, setInputValue] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [isTextLoading, setIsTextLoading] = useState(true);
+  const lastSavedValue = useRef("");
+
+  // Derived: true when the textarea differs from the last persisted value
+  const hasUnsavedChanges = inputValue !== lastSavedValue.current;
 
   // Real-time subscription for guest data
   useEffect(() => {
@@ -36,13 +41,19 @@ const TextPanel = ({ user, onShareText }) => {
           const docRef = getTextDocRef(user.uid);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
-            setInputValue(docSnap.data().text || "");
+            const text = docSnap.data().text || "";
+            setInputValue(text);
+            lastSavedValue.current = text;
           } else {
             setInputValue("");
+            lastSavedValue.current = "";
           }
         } catch (err) {
           console.error("Error fetching text:", err);
           message.error("Failed to load your text.");
+        } finally {
+          setIsTextLoading(false);
+          onDataLoaded?.();
         }
       };
       fetchData();
@@ -52,16 +63,20 @@ const TextPanel = ({ user, onShareText }) => {
     // Guest: real-time subscription to guest board
     const unsubscribe = subscribeToGuestData(
       (data) => {
-        setInputValue(data.text || "");
+        const text = data.text || "";
+        setInputValue(text);
+        lastSavedValue.current = text;
+        setIsTextLoading(false);
       },
       (err) => {
         console.error("Guest text subscription error:", err);
         message.error("Failed to load guest content.");
+        setIsTextLoading(false);
       }
     );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, onDataLoaded]);
 
   const handleSaveText = async () => {
     if (isSaving) return;
@@ -82,6 +97,7 @@ const TextPanel = ({ user, onShareText }) => {
       } else {
         await saveGuestText(inputValue);
       }
+      lastSavedValue.current = inputValue;
       message.success("Text saved successfully!");
     } catch (err) {
       console.error("Save text error:", err);
@@ -109,6 +125,7 @@ const TextPanel = ({ user, onShareText }) => {
         await clearGuestText();
       }
       setInputValue("");
+      lastSavedValue.current = "";
       message.success("Text cleared successfully!");
     } catch (err) {
       console.error("Clear text error:", err);
@@ -119,6 +136,15 @@ const TextPanel = ({ user, onShareText }) => {
   };
 
   const isBusy = isSaving || isClearing || isSharing;
+
+  if (isTextLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full min-h-[280px] sm:min-h-[350px] md:min-h-[400px]">
+        <div className="w-10 h-10 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4" />
+        <p className="text-sm text-gray-400">Loading text...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col justify-between w-full min-h-[280px] sm:min-h-[350px] md:min-h-[400px]">
@@ -172,7 +198,7 @@ const TextPanel = ({ user, onShareText }) => {
         </button>
         <button
           className="px-5 sm:px-6 py-2.5 sm:py-3 font-semibold text-sm sm:text-[1rem] bg-primary text-white rounded-xl cursor-pointer hover:bg-primary-dark transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-primary flex items-center gap-2 hover:shadow-md active:scale-[0.98]"
-          disabled={!inputValue.trim() || isBusy}
+          disabled={!inputValue.trim() || isBusy || hasUnsavedChanges}
           onClick={async () => {
             if (!inputValue.trim() || isSharing) return;
             setIsSharing(true);

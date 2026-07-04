@@ -4,7 +4,7 @@ import FilePanel from "../features/FilePanel";
 import { HiOutlineMenuAlt2 } from "react-icons/hi";
 import { PiFilesFill } from "react-icons/pi";
 
-const Sidebar = ({ user, onShareText, onShareFiles }) => {
+const Sidebar = ({ user, onShareText, onShareFiles, onDataLoaded }) => {
   const [activeTab, setActiveTab] = useState("text");
 
   const handleTabChange = useCallback((tab) => setActiveTab(tab), []);
@@ -42,9 +42,9 @@ const Sidebar = ({ user, onShareText, onShareFiles }) => {
       {/* Content Area */}
       <div className="flex-1 min-h-[260px] sm:min-h-[350px] md:min-h-[400px] p-4 sm:p-6 md:p-7 lg:p-8">
         {activeTab === "text" ? (
-          <TextPanel user={user} onShareText={onShareText} />
+          <TextPanel user={user} onShareText={onShareText} onDataLoaded={onDataLoaded} />
         ) : (
-          <FilePanel user={user} onShareFiles={onShareFiles} />
+          <FilePanel user={user} onShareFiles={onShareFiles} onDataLoaded={onDataLoaded} />
         )}
       </div>
     </div>

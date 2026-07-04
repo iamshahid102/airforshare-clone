@@ -80,9 +80,14 @@ const AuthPage = () => {
     }
   };
 
-  if (user && !loading) {
-    return navigate("/");
-  }
+  useEffect(() => {
+    if (user && !loading) {
+      navigate("/");
+    }
+  }, [user, loading, navigate]);
+
+  // Prevent flash of form while redirecting authenticated users
+  if (user && !loading) return null;
 
   const inputClasses =
     "!h-11 sm:!h-12 !px-4 !text-sm sm:!text-[15px] !rounded-xl !border-gray-200 hover:!border-gray-300 focus:!border-primary focus:!shadow-[0_0_0_3px_rgba(99,142,255,0.1)] transition-all duration-200";

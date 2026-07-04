@@ -54,7 +54,7 @@ const deleteFromCloudinary = async (publicId) => {
 
 const getFilesDocRef = (uid) => doc(db, "userFiles", uid);
 
-const FilePanel = ({ user, onShareFiles }) => {
+const FilePanel = ({ user, onShareFiles, onDataLoaded }) => {
   // Each item: { id: string, url: string, type: "local" | "firebase" }
   const [items, setItems] = useState([]);
   const [localFiles, setLocalFiles] = useState([]);
@@ -63,6 +63,7 @@ const FilePanel = ({ user, onShareFiles }) => {
   const [isSharing, setIsSharing] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [lightbox, setLightbox] = useState({ isOpen: false, index: 0 });
+  const [isFileLoading, setIsFileLoading] = useState(true);
   const idCounter = useRef(0);
 
   // Load images: real-time for guests, one-time for authenticated
@@ -87,6 +88,9 @@ const FilePanel = ({ user, onShareFiles }) => {
         } catch (err) {
           console.error("Error fetching files:", err);
           message.error("Failed to load your files.");
+        } finally {
+          setIsFileLoading(false);
+          onDataLoaded?.();
         }
       };
       fetchData();
@@ -104,14 +108,16 @@ const FilePanel = ({ user, onShareFiles }) => {
             type: "firebase",
           }))
         );
+        setIsFileLoading(false);
       },
       (err) => {
         console.error("Guest files subscription error:", err);
+        setIsFileLoading(false);
       }
     );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, onDataLoaded]);
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
@@ -354,6 +360,16 @@ const FilePanel = ({ user, onShareFiles }) => {
 
   const isBusy = isSaving || isClearing || isSharing || deletingId !== null;
   const hasLocalItems = items.some((it) => it.type === "local");
+  const hasAnyItems = items.length > 0;
+
+  if (isFileLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full min-h-[280px] sm:min-h-[350px] md:min-h-[400px]">
+        <div className="w-10 h-10 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4" />
+        <p className="text-sm text-gray-400">Loading files...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-[280px] sm:min-h-[350px] md:min-h-[400px]">
@@ -464,12 +480,13 @@ const FilePanel = ({ user, onShareFiles }) => {
         </button>
         <button
           className="px-5 sm:px-6 py-2.5 sm:py-3 font-semibold text-sm sm:text-[1rem] bg-primary text-white rounded-xl cursor-pointer hover:bg-primary-dark transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-primary flex items-center gap-2 hover:shadow-md active:scale-[0.98]"
-          disabled={!hasLocalItems || isBusy}
+          disabled={!hasAnyItems || isBusy || hasLocalItems}
           onClick={async () => {
-            const localItems = items.filter((it) => it.type === "local");
-            if (!localItems.length || isSharing) return;
+            if (isSharing) return;
             setIsSharing(true);
             try {
+              // Upload any new local files first
+              const localItems = items.filter((it) => it.type === "local");
               const uploadedUrls = [];
               for (const item of localItems) {
                 const localIndex = localItems.indexOf(item);
@@ -489,8 +506,15 @@ const FilePanel = ({ user, onShareFiles }) => {
                   uploadedUrls.push(result.secure_url);
                 }
               }
-              if (uploadedUrls.length > 0) {
-                await onShareFiles(uploadedUrls);
+
+              // Collect all URLs: newly uploaded + existing firebase items
+              const existingUrls = items
+                .filter((it) => it.type === "firebase")
+                .map((it) => it.url);
+              const allUrls = [...existingUrls, ...uploadedUrls];
+
+              if (allUrls.length > 0) {
+                await onShareFiles(allUrls);
               }
             } catch {
               // Error handled by parent
